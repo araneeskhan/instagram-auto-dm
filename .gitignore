@@ -1,0 +1,23 @@
+# Secrets — never commit these
+.env
+.env.local
+.env.*.local
+*.pem
+*-credentials.json
+service-account*.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Logs / local state
+*.log
+rules.json.tmp
+
+# OS
+.DS_Store
+Thumbs.db

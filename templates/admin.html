@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instagram Bot — Reply Rules</title>
+<style>
+  :root {
+    --bg:#f6f7f9; --panel:#fff; --ink:#16181d; --muted:#6b7280;
+    --line:#e3e6ea; --accent:#4f46e5; --accent-ink:#fff;
+    --danger:#dc2626; --ok:#059669; --chip:#eef0f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#111318; --panel:#191c22; --ink:#e8eaed; --muted:#9aa1ac;
+      --line:#2a2e37; --accent:#6d28d9; --accent-ink:#fff;
+      --danger:#f87171; --ok:#34d399; --chip:#232830;
+    }
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  .wrap { max-width:860px; margin:0 auto; padding:24px 16px 64px; }
+  header { display:flex; align-items:center; justify-content:space-between;
+           gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  h1 { font-size:20px; margin:0; letter-spacing:-0.01em; }
+  .sub { color:var(--muted); font-size:13px; margin-top:2px; }
+  button {
+    font:inherit; border:1px solid var(--line); background:var(--panel);
+    color:var(--ink); padding:8px 14px; border-radius:8px; cursor:pointer;
+  }
+  button:hover { border-color:var(--muted); }
+  button.primary { background:var(--accent); color:var(--accent-ink); border-color:transparent; }
+  button.danger { color:var(--danger); }
+  button.small { padding:4px 10px; font-size:13px; }
+  input, textarea {
+    font:inherit; width:100%; padding:8px 10px; border-radius:8px;
+    border:1px solid var(--line); background:var(--panel); color:var(--ink);
+  }
+  textarea { resize:vertical; min-height:58px; }
+  label { display:block; font-size:12px; color:var(--muted);
+          margin:10px 0 4px; text-transform:uppercase; letter-spacing:.04em; }
+  .tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:20px; flex-wrap:wrap; }
+  .tabs button { border:none; background:none; border-radius:0; padding:10px 14px;
+                 color:var(--muted); border-bottom:2px solid transparent; }
+  .tabs button.on { color:var(--ink); border-bottom-color:var(--accent); font-weight:600; }
+  .card { background:var(--panel); border:1px solid var(--line);
+          border-radius:12px; padding:16px; margin-bottom:12px; }
+  .card-head { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .chip { display:inline-block; background:var(--chip); border-radius:999px;
+          padding:2px 10px; font-size:12px; color:var(--muted); }
+  .row { display:flex; gap:12px; flex-wrap:wrap; }
+  .row > div { flex:1 1 260px; }
+  .bar { position:sticky; bottom:0; background:var(--panel); border-top:1px solid var(--line);
+         padding:12px 16px; margin:24px -16px -64px; display:flex;
+         align-items:center; gap:12px; flex-wrap:wrap; }
+  .msg { font-size:13px; }
+  .msg.ok { color:var(--ok); } .msg.err { color:var(--danger); }
+  .empty { color:var(--muted); font-size:14px; padding:24px; text-align:center;
+           border:1px dashed var(--line); border-radius:12px; }
+  ul.problems { color:var(--danger); font-size:13px; margin:8px 0 0; padding-left:20px; }
+  .login { max-width:340px; margin:14vh auto 0; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:500; font-size:12px; text-transform:uppercase; }
+  code { background:var(--chip); padding:1px 5px; border-radius:4px; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="login" class="login" hidden>
+    <div class="card">
+      <h1>Reply Rules</h1>
+      <div class="sub">Enter your admin password to continue.</div>
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password">
+      <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+        <button class="primary" onclick="doLogin()">Sign in</button>
+        <span id="loginMsg" class="msg err"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="app" hidden>
+    <header>
+      <div>
+        <h1>Reply Rules</h1>
+        <div class="sub" id="backendNote"></div>
+      </div>
+      <button class="small" onclick="doLogout()">Sign out</button>
+    </header>
+
+    <div class="tabs">
+      <button data-tab="comments" class="on" onclick="showTab('comments')">Comment rules</button>
+      <button data-tab="dms" onclick="showTab('dms')">DM rules</button>
+      <button data-tab="posts" onclick="showTab('posts')">Per-post</button>
+      <button data-tab="activity" onclick="showTab('activity')">Activity</button>
+    </div>
+
+    <div id="tab-comments" class="tab">
+      <div id="commentRules"></div>
+      <button class="small" onclick="addRule('comment_rules')">+ Add comment rule</button>
+      <div class="card" style="margin-top:16px">
+        <div class="chip">Fallback — when nothing matches</div>
+        <label>Public reply (leave blank to stay silent)</label>
+        <textarea id="cdPublic"></textarea>
+        <label>Private DM</label>
+        <textarea id="cdPrivate"></textarea>
+      </div>
+    </div>
+
+    <div id="tab-dms" class="tab" hidden>
+      <div id="dmRules"></div>
+      <button class="small" onclick="addRule('dm_rules')">+ Add DM rule</button>
+      <div class="card" style="margin-top:16px">
+        <div class="chip">Fallback — when nothing matches</div>
+        <label>Reply</label>
+        <textarea id="dmDefault"></textarea>
+      </div>
+    </div>
+
+    <div id="tab-posts" class="tab" hidden>
+      <p class="sub" style="margin-top:0">
+        Rules that only fire on one specific post. Run
+        <code>python list_posts.py</code> to find a post's media ID.
+      </p>
+      <div id="postList"></div>
+      <div class="row" style="margin-top:12px; align-items:flex-end">
+        <div><label>New post media ID</label><input id="newPostId" placeholder="17895695668004550"></div>
+        <div style="flex:0 0 auto"><button class="small" onclick="addPost()">+ Add post</button></div>
+      </div>
+    </div>
+
+    <div id="tab-activity" class="tab" hidden>
+      <p class="sub" style="margin-top:0">The 50 most recent things the bot did.</p>
+      <div id="events"></div>
+    </div>
+
+    <div class="bar">
+      <button class="primary" onclick="save()">Save changes</button>
+      <button class="small" onclick="load()">Discard &amp; reload</button>
+      <span id="saveMsg" class="msg"></span>
+    </div>
+    <ul class="problems" id="problems" hidden></ul>
+  </div>
+</div>
+
+<script>
+let rules = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => (s ?? "").toString()
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+async function api(path, opts) {
+  const r = await fetch(path, {headers:{"Content-Type":"application/json"}, ...opts});
+  if (r.status === 401) { showLogin(); throw new Error("auth"); }
+  return r;
+}
+
+function showLogin() { $("login").hidden = false; $("app").hidden = true; }
+function showApp()   { $("login").hidden = true;  $("app").hidden = false; }
+
+async function doLogin() {
+  const r = await fetch("/admin/login", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({password: $("pw").value})
+  });
+  if (r.ok) { $("loginMsg").textContent=""; $("pw").value=""; showApp(); load(); }
+  else { $("loginMsg").textContent = "Incorrect password"; }
+}
+
+async function doLogout() {
+  await fetch("/admin/logout", {method:"POST"});
+  showLogin();
+}
+
+function showTab(name) {
+  document.querySelectorAll(".tab").forEach(el => el.hidden = true);
+  $("tab-" + name).hidden = false;
+  document.querySelectorAll(".tabs button").forEach(b =>
+    b.classList.toggle("on", b.dataset.tab === name));
+  if (name === "activity") loadEvents();
+}
+
+function ruleCard(rule, listKey, idx, postId) {
+  const isDM = listKey === "dm_rules";
+  const path = postId ? `posts.${postId}` : "global";
+  return `
+  <div class="card">
+    <div class="card-head">
+      <span class="chip">${isDM ? "DM" : "Comment"} rule ${idx + 1}</span>
+      <button class="small danger" onclick="delRule('${listKey}',${idx},'${postId || ""}')">Remove</button>
+    </div>
+    <label>Keywords (comma separated — matched as whole words)</label>
+    <input value="${esc((rule.keywords || []).join(", "))}"
+           oninput="setField('${listKey}',${idx},'keywords',this.value,'${postId || ""}')">
+    ${isDM ? `
+      <label>Reply</label>
+      <textarea oninput="setField('${listKey}',${idx},'reply',this.value,'${postId || ""}')">${esc(rule.reply)}</textarea>
+    ` : `
+      <div class="row">
+        <div>
+          <label>Public reply (blank = silent)</label>
+          <textarea oninput="setField('${listKey}',${idx},'public_reply',this.value,'${postId || ""}')">${esc(rule.public_reply)}</textarea>
+        </div>
+        <div>
+          <label>Private DM</label>
+          <textarea oninput="setField('${listKey}',${idx},'private_reply',this.value,'${postId || ""}')">${esc(rule.private_reply)}</textarea>
+        </div>
+      </div>
+    `}
+  </div>`;
+}
+
+function targetList(listKey, postId) {
+  if (postId) {
+    rules.posts[postId][listKey] = rules.posts[postId][listKey] || [];
+    return rules.posts[postId][listKey];
+  }
+  rules[listKey] = rules[listKey] || [];
+  return rules[listKey];
+}
+
+function setField(listKey, idx, field, value, postId) {
+  const list = targetList(listKey, postId);
+  list[idx][field] = (field === "keywords")
+    ? value.split(",").map(s => s.trim()).filter(Boolean)
+    : (value === "" ? null : value);
+}
+
+function addRule(listKey, postId) {
+  const list = targetList(listKey, postId);
+  list.push(listKey === "dm_rules"
+    ? {keywords: [], reply: ""}
+    : {keywords: [], public_reply: null, private_reply: ""});
+  render();
+}
+
+function delRule(listKey, idx, postId) {
+  targetList(listKey, postId || null).splice(idx, 1);
+  render();
+}
+
+function addPost() {
+  const id = $("newPostId").value.trim();
+  if (!/^\d+$/.test(id)) { alert("Media ID should be all digits — run list_posts.py to get it."); return; }
+  rules.posts = rules.posts || {};
+  if (rules.posts[id]) { alert("That post already has rules."); return; }
+  rules.posts[id] = {_label: "", comment_rules: [], ignore_global: false};
+  $("newPostId").value = "";
+  render();
+}
+
+function delPost(id) {
+  if (!confirm("Remove all rules for post " + id + "?")) return;
+  delete rules.posts[id];
+  render();
+}
+
+function setPostField(id, field, value) { rules.posts[id][field] = value; }
+
+function render() {
+  $("commentRules").innerHTML =
+    (rules.comment_rules || []).map((r,i) => ruleCard(r,"comment_rules",i)).join("")
+    || `<div class="empty">No comment rules yet.</div>`;
+
+  $("dmRules").innerHTML =
+    (rules.dm_rules || []).map((r,i) => ruleCard(r,"dm_rules",i)).join("")
+    || `<div class="empty">No DM rules yet.</div>`;
+
+  const cd = rules.comment_default || {};
+  $("cdPublic").value = cd.public_reply || "";
+  $("cdPrivate").value = cd.private_reply || "";
+  $("dmDefault").value = rules.dm_default || "";
+
+  const posts = rules.posts || {};
+  const ids = Object.keys(posts).filter(k => !k.startsWith("_"));
+  $("postList").innerHTML = ids.length ? ids.map(id => `
+    <div class="card">
+      <div class="card-head">
+        <span class="chip">Post ${esc(id)}</span>
+        <button class="small danger" onclick="delPost('${esc(id)}')">Remove post</button>
+      </div>
+      <label>Label (just a note for you)</label>
+      <input value="${esc(posts[id]._label)}" oninput="setPostField('${esc(id)}','_label',this.value)">
+      <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px;color:var(--ink);margin-top:12px">
+        <input type="checkbox" style="width:auto" ${posts[id].ignore_global ? "checked" : ""}
+               onchange="setPostField('${esc(id)}','ignore_global',this.checked)">
+        Only use this post's rules (ignore global rules and fallback)
+      </label>
+      <div style="margin-top:12px">
+        ${(posts[id].comment_rules || []).map((r,i) => ruleCard(r,"comment_rules",i,id)).join("")}
+      </div>
+      <button class="small" onclick="addRule('comment_rules','${esc(id)}')">+ Add rule for this post</button>
+    </div>
+  `).join("") : `<div class="empty">No per-post rules yet.</div>`;
+}
+
+function collectDefaults() {
+  rules.comment_default = {
+    public_reply: $("cdPublic").value || null,
+    private_reply: $("cdPrivate").value || null,
+  };
+  rules.dm_default = $("dmDefault").value || null;
+}
+
+async function load() {
+  try {
+    const r = await api("/admin/api/rules");
+    rules = await r.json();
+    rules.posts = rules.posts || {};
+    render();
+    $("saveMsg").textContent = "";
+    $("problems").hidden = true;
+  } catch (e) { /* showLogin already called */ }
+}
+
+async function save() {
+  collectDefaults();
+  const r = await api("/admin/api/rules", {method:"PUT", body: JSON.stringify(rules)});
+  const data = await r.json();
+  const msg = $("saveMsg"), probs = $("problems");
+  if (r.ok) {
+    msg.className = "msg ok"; msg.textContent = "Saved — live immediately.";
+    probs.hidden = true;
+    setTimeout(() => msg.textContent = "", 3000);
+  } else {
+    msg.className = "msg err"; msg.textContent = "Not saved — fix the problems below.";
+    probs.hidden = false;
+    probs.innerHTML = (data.problems || ["Unknown error"]).map(p => `<li>${esc(p)}</li>`).join("");
+  }
+}
+
+async function loadEvents() {
+  try {
+    const r = await api("/admin/api/events");
+    const {events} = await r.json();
+    $("events").innerHTML = events.length ? `
+      <table>
+        <tr><th>When (UTC)</th><th>Type</th><th>Post</th><th>What it sent</th></tr>
+        ${events.map(e => `<tr>
+          <td>${esc(e.at)}</td>
+          <td>${esc(e.kind)}</td>
+          <td>${esc(e.media_id || "—")}</td>
+          <td>${esc(e.summary)}</td>
+        </tr>`).join("")}
+      </table>` : `<div class="empty">Nothing yet. Events appear here once the bot replies to something.</div>`;
+  } catch (e) { /* handled */ }
+}
+
+if ({{ 'true' if logged_in else 'false' }}) { showApp(); load(); } else { showLogin(); }
+$("pw")?.addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+</script>
+</body>
+</html>

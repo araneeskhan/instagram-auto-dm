@@ -1,0 +1,65 @@
+{
+  "_comment": "Edit this file to change what the bot says. No code changes needed. Run `python list_posts.py` to get the media IDs for the 'posts' section below.",
+
+  "posts": {
+    "17895695668004550": {
+      "_label": "Summer sale reel — REPLACE THIS ID with a real one from list_posts.py",
+      "comment_rules": [
+        {
+          "keywords": ["sale", "discount", "code"],
+          "public_reply": "Sent you the code in your DMs! 💌",
+          "private_reply": "Here's your 20% off code: SUMMER20 → https://example.com/shop"
+        }
+      ],
+      "comment_default": {
+        "public_reply": null,
+        "private_reply": "Thanks for commenting on our summer sale post! Here's the collection: https://example.com/summer"
+      }
+    },
+
+    "17999999999999999": {
+      "_label": "Giveaway post — only the giveaway reply should fire here",
+      "ignore_global": true,
+      "comment_rules": [
+        {
+          "keywords": ["done", "entered", "in"],
+          "public_reply": "You're entered! 🎉 Good luck!",
+          "private_reply": "You're officially in the giveaway 🎁 Winner announced Friday!"
+        }
+      ]
+    }
+  },
+
+  "comment_rules": [
+    {
+      "keywords": ["price", "cost", "how much"],
+      "public_reply": "Thanks for asking! We just sent you the details in your DMs ✅",
+      "private_reply": "Hey! Thanks for your interest 👋 Here's our pricing: https://example.com/pricing"
+    },
+    {
+      "keywords": ["link", "shop", "buy"],
+      "public_reply": "Check your DMs! 💬",
+      "private_reply": "Here's the link you asked for: https://example.com/shop"
+    }
+  ],
+  "comment_default": {
+    "public_reply": null,
+    "private_reply": "Thanks for your comment! DM us anytime if you have questions 🙌"
+  },
+
+  "dm_rules": [
+    {
+      "keywords": ["hi", "hello", "hey"],
+      "reply": "Hey there! 👋 Thanks for reaching out — how can we help?"
+    },
+    {
+      "keywords": ["price", "cost", "how much"],
+      "reply": "Here's our current pricing: https://example.com/pricing"
+    },
+    {
+      "keywords": ["hours", "open"],
+      "reply": "We're open Monday–Saturday, 10am–6pm."
+    }
+  ],
+  "dm_default": "Thanks for your message! A team member will get back to you shortly."
+}
